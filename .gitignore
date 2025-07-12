@@ -1,0 +1,11 @@
+# sudoku files
+*.sk
+
+# random stuff like python plotting scripts
+tmp
+
+# executable
+sudoku
+
+# object files I forget to clean with `make clean`
+**/*.o
