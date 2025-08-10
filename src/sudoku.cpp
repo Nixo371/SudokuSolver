@@ -1,6 +1,8 @@
 #include "sudoku.hpp"
 
+#include <cstddef>
 #include <iostream>
+#include <sstream>
 
 bool Sudoku::check_row(int row) const {
 	std::vector<bool> found = std::vector<bool>(9, false);
@@ -80,6 +82,84 @@ void Sudoku::initialize_board() {
 	}
 }
 
+// Add a possibility in all cells of a row
+void Sudoku::add_possibility_row(int row, int value) {
+	for (int column = 0; column < 9; column++) {
+		Tile* tile = this->board.at(row).at(column);
+		tile->add_possibility(value);
+	}
+}
+
+// Add a possibility in all cells of a column
+void Sudoku::add_possibility_column(int column, int value) {
+	for (int row = 0; row < 9; row++) {
+		Tile* tile = this->board.at(row).at(column);
+		tile->add_possibility(value);
+	}
+}
+
+// Add a possibility in all cells of a region
+void Sudoku::add_possibility_region(int region_row, int region_column, int value) {
+	// 3 x 3
+	int start_row = region_row * 3;
+	int end_row = start_row + 3;
+	int start_column = region_column * 3;
+	int end_column = start_row + 3;
+
+	for (int row = start_row; row < end_row; row++) {
+		for (int column = start_column; column < end_column; column++) {
+			Tile* tile = this->board.at(row).at(column);
+			tile->add_possibility(value);
+		}
+	}
+}
+
+// Remove a possibility in all cells of a row
+void Sudoku::remove_possibility_row(int row, int value) {
+	for (int column = 0; column < 9; column++) {
+		Tile* tile = this->board.at(row).at(column);
+		tile->remove_possibility(value);
+	}
+}
+
+// Remove a possibility in all cells of a column
+void Sudoku::remove_possibility_column(int column, int value) {
+	for (int row = 0; row < 9; row++) {
+		Tile* tile = this->board.at(row).at(column);
+		tile->remove_possibility(value);
+	}
+}
+
+// Remove a possibility in all cells of a region
+void Sudoku::remove_possibility_region(int region_row, int region_column, int value) {
+	// 3 x 3
+	int start_row = region_row * 3;
+	int end_row = start_row + 3;
+	int start_column = region_column * 3;
+	int end_column = start_row + 3;
+
+	for (int row = start_row; row < end_row; row++) {
+		for (int column = start_column; column < end_column; column++) {
+			Tile* tile = this->board.at(row).at(column);
+			tile->remove_possibility(value);
+		}
+	}
+}
+
+void Sudoku::trim_possibilities() {
+	for (int row = 0; row < 9; row++) {
+		for (int column = 0; column < 9; column++) {
+			Tile* tile = this->board.at(row).at(column);
+			if (tile->get_value() == 0) {
+				continue;
+			}
+			this->remove_possibility_row(row, tile->get_value());
+			this->remove_possibility_column(column, tile->get_value());
+			this->remove_possibility_region(row / 3, column / 3, tile->get_value());
+		}
+	}
+}
+
 void Sudoku::load_board(std::string board) {
 	size_t i = 0;
 
@@ -90,7 +170,7 @@ void Sudoku::load_board(std::string board) {
 			if (c != '.') {
 				tile->set_value(c - '0');
 				tile->set_fixed(true);
-				tile->set_possibilities(std::unordered_set<int>());
+				tile->set_possibilities(std::vector<int>());
 			}
 			i++;
 		}
@@ -133,7 +213,8 @@ bool Sudoku::solve_backtracking(int row, int column, bool debug) {
 	}
 	
 	if (debug) {
-		this->print_board();
+		std::cout << "\033[2J\033[H"; // clear the screen
+		std::cout << this->print_board() << std::endl;
 	}
 
 	Tile* tile = this->get_tile(row, column);
@@ -143,7 +224,10 @@ bool Sudoku::solve_backtracking(int row, int column, bool debug) {
 	}
 
 	// Backtracking time
-	for (int value = 1; value <= 9; value++) {
+	// This is a copy because we may edit the vector in the future tiles, but we don't want it to change unless we go back before this tile
+	std::vector<int> possibilities = std::vector<int>(tile->get_possibilities());
+	for (size_t i = 0; i < possibilities.size(); i++) {
+		int value = possibilities.at(i);
 		tile->set_value(value);
 		auto check_valid = [&]() -> bool {
 			return (this->check_valid(row, column));
@@ -153,47 +237,57 @@ bool Sudoku::solve_backtracking(int row, int column, bool debug) {
 			tile->set_value(0);
 			continue;
 		}
-
+		
+		this->remove_possibility_row(row, value);
+		this->remove_possibility_column(column, value);
+		this->remove_possibility_region(row / 3, column / 3, value);
 		bool backtracking = solve_backtracking(row, column + 1, debug);
 
 		if (backtracking == true) {
 			return (true);
 		}
+
+		this->add_possibility_row(row, value);
+		this->add_possibility_column(row, value);
+		this->add_possibility_region(row / 3, column / 3, value);
 	}
 
 	tile->set_value(0);
 	return (false);
 }
 
-void Sudoku::print_board() const {
-	std::cout << "\033[2J\033[H";
-	std::cout << "-------------------------------" << std::endl;
+std::string Sudoku::print_board() const {
+	std::stringstream ss;
+
+	ss << "-------------------------------" << std::endl;
 	for (int row = 0; row < 9; row++) {
-		std::cout << "|";
+		ss << "|";
 		for (int column = 0; column < 9; column++) {
 			Tile* tile = this->get_tile(row, column);
-			std::cout << " ";
+			ss << " ";
 			if (tile->get_value() == 0) {
-				std::cout << " ";
+				ss << " ";
 			}
 			else {
-				std::cout << tile->get_value();
+				ss << tile->get_value();
 			}
-			std::cout << " ";
+			ss << " ";
 			if ((column + 1) % 3 == 0) {
-				std::cout << "|";
+				ss << "|";
 			}
 
 		}
-		std::cout << std::endl;
+		ss << std::endl;
 		if ((row + 1) % 3 == 0) {
-			std::cout << "-------------------------------" << std::endl;
+			ss << "-------------------------------" << std::endl;
 		}
 	}
+
+	return ss.str();
 }
 
 std::ostream& operator<< (std::ostream& out, const Sudoku& sudoku) {
-	sudoku.print_board();
+	out << sudoku.print_board();
 
 	return (out);
 }

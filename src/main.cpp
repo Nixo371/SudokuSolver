@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 		file.clear();
 		file.seekg(0);
 
-		out_file.open(std::string(argv[i]).append("_out"));
+		out_file.open(std::string(argv[i]).append(".out"));
 		out_file << "total_time, check_valid" << std::endl;
 
 		int count = 0;
@@ -40,17 +40,23 @@ int main(int argc, char *argv[]) {
 		while (std::getline(file, line)) {
 			Sudoku sudoku = Sudoku(line);
 			sudoku.profiler.reset_function_times();
+			std::cout << "\033[2J\033[H"; // clear the screen
 			std::cout << sudoku << std::endl;
 			std::cout << "Solving puzzle #" << count + 1 << "/" << total_puzzles << std::endl;
 
 			puzzle_timer.reset();
-			sudoku.solve_backtracking(0, 0, false);
+			bool solvable = sudoku.solve_backtracking(0, 0, false);
 			double puzzle_time = puzzle_timer.elapsed();
 			std::string puzzle_time_str = std::to_string(puzzle_time);
 
+			std::cout << "\033[2J\033[H"; // clear the screen
 			std::cout << sudoku << std::endl;
 			count++;
 
+			if (solvable == false) {
+				out_file << "Unsolvable!" << std::endl;
+			}
+			out_file << "Solved Sudoku:" << std::endl << sudoku << std::endl;
 			out_file << puzzle_time_str << ", " << sudoku.profiler.get_function_times()["check_valid"] << std::endl;
 		}
 		double time = timer.elapsed();
