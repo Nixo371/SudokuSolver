@@ -12,13 +12,13 @@ class Sudoku {
 		bool check_column(int column) const;
 		bool check_region(int region_row, int region_column) const;
 
-		void add_possibility_row(int row, int value);
-		void add_possibility_column(int column, int value);
-		void add_possibility_region(int region_row, int region_column, int value);
+		void add_possibility_row(int row, int column, int value);
+		void add_possibility_column(int row, int column, int value);
+		void add_possibility_region(int row, int column, int value);
 		
-		void remove_possibility_row(int row, int value);
-		void remove_possibility_column(int column, int value);
-		void remove_possibility_region(int region_row, int region_column, int value);
+		void remove_possibility_row(int row, int column, int value);
+		void remove_possibility_column(int row, int column, int value);
+		void remove_possibility_region(int row, int column, int value);
 	
 	public:
 		Sudoku();

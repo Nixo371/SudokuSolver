@@ -1,5 +1,6 @@
 # sudoku files
 *.sk
+*.out
 
 # random stuff like python plotting scripts
 tmp

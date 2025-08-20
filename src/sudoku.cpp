@@ -83,64 +83,88 @@ void Sudoku::initialize_board() {
 }
 
 // Add a possibility in all cells of a row
-void Sudoku::add_possibility_row(int row, int value) {
-	for (int column = 0; column < 9; column++) {
-		Tile* tile = this->board.at(row).at(column);
+void Sudoku::add_possibility_row(int row, int column, int value) {
+	for (int column_ = 0; column_ < 9; column_++) {
+		if (column_ == column) {
+			continue;
+		}
+		Tile* tile = this->board.at(row).at(column_);
 		tile->add_possibility(value);
 	}
 }
 
 // Add a possibility in all cells of a column
-void Sudoku::add_possibility_column(int column, int value) {
-	for (int row = 0; row < 9; row++) {
-		Tile* tile = this->board.at(row).at(column);
+void Sudoku::add_possibility_column(int row, int column, int value) {
+	for (int row_ = 0; row_ < 9; row_++) {
+		if (row_ == row) {
+			continue;
+		}
+		Tile* tile = this->board.at(row_).at(column);
 		tile->add_possibility(value);
 	}
 }
 
 // Add a possibility in all cells of a region
-void Sudoku::add_possibility_region(int region_row, int region_column, int value) {
+void Sudoku::add_possibility_region(int row, int column, int value) {
 	// 3 x 3
+	int region_row = row / 3;
+	int region_column = column / 3;
+
 	int start_row = region_row * 3;
 	int end_row = start_row + 3;
 	int start_column = region_column * 3;
-	int end_column = start_row + 3;
+	int end_column = start_column + 3;
 
-	for (int row = start_row; row < end_row; row++) {
-		for (int column = start_column; column < end_column; column++) {
-			Tile* tile = this->board.at(row).at(column);
+	for (int row_ = start_row; row_ < end_row; row_++) {
+		for (int column_ = start_column; column_ < end_column; column_++) {
+			if (row_ == row && column_ == column) {
+				continue;
+			}
+			Tile* tile = this->board.at(row_).at(column_);
 			tile->add_possibility(value);
 		}
 	}
 }
 
 // Remove a possibility in all cells of a row
-void Sudoku::remove_possibility_row(int row, int value) {
-	for (int column = 0; column < 9; column++) {
-		Tile* tile = this->board.at(row).at(column);
+void Sudoku::remove_possibility_row(int row, int column, int value) {
+	for (int column_ = 0; column_ < 9; column_++) {
+		if (column_ == column) {
+			continue;
+		}
+		Tile* tile = this->board.at(row).at(column_);
 		tile->remove_possibility(value);
 	}
 }
 
 // Remove a possibility in all cells of a column
-void Sudoku::remove_possibility_column(int column, int value) {
-	for (int row = 0; row < 9; row++) {
-		Tile* tile = this->board.at(row).at(column);
+void Sudoku::remove_possibility_column(int row, int column, int value) {
+	for (int row_ = 0; row_ < 9; row_++) {
+		if (row_ == row) {
+			continue;
+		}
+		Tile* tile = this->board.at(row_).at(column);
 		tile->remove_possibility(value);
 	}
 }
 
 // Remove a possibility in all cells of a region
-void Sudoku::remove_possibility_region(int region_row, int region_column, int value) {
+void Sudoku::remove_possibility_region(int row, int column, int value) {
 	// 3 x 3
+	int region_row = row / 3;
+	int region_column = column / 3;
+
 	int start_row = region_row * 3;
 	int end_row = start_row + 3;
 	int start_column = region_column * 3;
-	int end_column = start_row + 3;
+	int end_column = start_column + 3;
 
-	for (int row = start_row; row < end_row; row++) {
-		for (int column = start_column; column < end_column; column++) {
-			Tile* tile = this->board.at(row).at(column);
+	for (int row_ = start_row; row_ < end_row; row_++) {
+		for (int column_ = start_column; column_ < end_column; column_++) {
+			if (row_ == row && column_ == column) {
+				continue;
+			}
+			Tile* tile = this->board.at(row_).at(column_);
 			tile->remove_possibility(value);
 		}
 	}
@@ -153,9 +177,9 @@ void Sudoku::trim_possibilities() {
 			if (tile->get_value() == 0) {
 				continue;
 			}
-			this->remove_possibility_row(row, tile->get_value());
-			this->remove_possibility_column(column, tile->get_value());
-			this->remove_possibility_region(row / 3, column / 3, tile->get_value());
+			this->remove_possibility_row(row, column, tile->get_value());
+			this->remove_possibility_column(row, column, tile->get_value());
+			this->remove_possibility_region(row, column, tile->get_value());
 		}
 	}
 }
@@ -238,18 +262,18 @@ bool Sudoku::solve_backtracking(int row, int column, bool debug) {
 			continue;
 		}
 		
-		this->remove_possibility_row(row, value);
-		this->remove_possibility_column(column, value);
-		this->remove_possibility_region(row / 3, column / 3, value);
+		this->remove_possibility_row(row, column, value);
+		this->remove_possibility_column(row, column, value);
+		this->remove_possibility_region(row, column, value);
 		bool backtracking = solve_backtracking(row, column + 1, debug);
 
 		if (backtracking == true) {
 			return (true);
 		}
 
-		this->add_possibility_row(row, value);
-		this->add_possibility_column(row, value);
-		this->add_possibility_region(row / 3, column / 3, value);
+		this->add_possibility_row(row, column, value);
+		this->add_possibility_column(row, column, value);
+		this->add_possibility_region(row, column, value);
 	}
 
 	tile->set_value(0);
